@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String?
+  role      Role
+  avatar    String?
+  createdAt DateTime @default(now())
+
+  employerProfile    EmployerProfile?
+  seekerPreferences  SeekerPreferences?
+  notificationLogs   NotificationLog[]
+}
+
+enum Role {
+  seeker
+  employer
+}
+
+model EmployerProfile {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
+  companyName String
+  companyLogo String?
+  location    String?
+  description String?
+  website     String?
+  createdAt   DateTime @default(now())
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobListings JobListing[]
+}
+
+model JobListing {
+  id           Int        @id @default(autoincrement())
+  employerId   Int
+  title        String
+  category     String
+  jobType      JobType
+  salaryMin    Int?
+  salaryMax    Int?
+  description  String
+  minExperience Int       @default(0)
+  deadline     DateTime?
+  applyMethod  ApplyMethod
+  applyContact String
+  status       JobStatus  @default(active)
+  deletedAt    DateTime?
+  createdAt    DateTime   @default(now())
+
+  employer         EmployerProfile   @relation(fields: [employerId], references: [id], onDelete: Cascade)
+  locations        JobLocation[]
+  notificationLogs NotificationLog[]
+}
+
+enum JobType {
+  fulltime
+  parttime
+  contract
+  freelance
+}
+
+enum ApplyMethod {
+  whatsapp
+  email
+}
+
+enum JobStatus {
+  active
+  closed
+  expired
+}
+
+model JobLocation {
+  id       Int    @id @default(autoincrement())
+  jobId    Int
+  province String
+  city     String
+
+  job JobListing @relation(fields: [jobId], references: [id], onDelete: Cascade)
+}
+
+model SeekerPreferences {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @unique
+  categories Json     @default("[]")
+  locations  Json     @default("[]")
+  jobTypes   Json     @default("[]")
+  minSalary  Int?
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model NotificationLog {
+  id     Int      @id @default(autoincrement())
+  userId Int
+  jobId  Int
+  sentAt DateTime @default(now())
+
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job  JobListing @relation(fields: [jobId], references: [id], onDelete: Cascade)
+}
